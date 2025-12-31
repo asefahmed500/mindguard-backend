@@ -1,29 +1,53 @@
-# MindGuard Emotion Detection Service
-# Simplified single-stage build
+# Stage 1: Build stage
+FROM python:3.11-slim as builder
 
+WORKDIR /app
+
+# Install system dependencies needed for building
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libsndfile1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+
+# Optimize: Use CPU-only torch to save GBs
+# This assumes SpeechBrain uses torch as a dependency
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Final stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install only necessary runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libsndfile1-dev \
+    libsndfile1 \
     ffmpeg \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY . .
 
+# Optimization: Remove caches and unnecessary files
+RUN find . -type d -name "__pycache__" -exec rm -rf {} + && \
+    rm -rf /root/.cache/pip
+
 # Expose port
 EXPOSE 8000
 
+# Set environment variables
+ENV TF_CPP_MIN_LOG_LEVEL=2
+ENV PORT=8000
+
 # Run the application
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
