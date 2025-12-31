@@ -45,7 +45,7 @@ EXPOSE 8000
 
 # Set environment variables
 ENV TF_CPP_MIN_LOG_LEVEL=3
-ENV PORT=8000
 
-# Run the application
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
+# Run the application using shell form to ensure 
+# environment variable expansion works correctly
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
