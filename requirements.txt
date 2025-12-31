@@ -1,16 +1,15 @@
-# Optimized requirements for CPU-only deployment (Railway/Cloud Run)
+# "Lite" requirements for backend to fit under 4GB (Railway)
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 
-# Use CPU version of TensorFlow to save several GBs
+# Face Detection (Keep but optimized)
 tensorflow-cpu>=2.15.0
 deepface>=0.0.79
 tf-keras>=2.15.0
 
-# SpeechBrain and dependencies (optimized)
-# We use --extra-index-url in Dockerfile for CPU-only torch
-speechbrain>=1.0.0
+# Voice Detection (LITE MODE: Removed SpeechBrain/Torch to save ~1GB)
+# Falls back to librosa feature-based detection
 librosa>=0.10.1
 soundfile>=0.12.1
 numpy>=1.24.0,<2.0.0

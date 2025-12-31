@@ -12,10 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Python dependencies
 COPY requirements.txt .
 
-# Optimize: Use CPU-only torch to save GBs
-# This assumes SpeechBrain uses torch as a dependency
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Final stage
@@ -35,8 +32,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
+# Copy application code (excluding vercel-specific files)
 COPY . .
+RUN rm -f vercel.json api/index.py
 
 # Optimization: Remove caches and unnecessary files
 RUN find . -type d -name "__pycache__" -exec rm -rf {} + && \
@@ -46,7 +44,7 @@ RUN find . -type d -name "__pycache__" -exec rm -rf {} + && \
 EXPOSE 8000
 
 # Set environment variables
-ENV TF_CPP_MIN_LOG_LEVEL=2
+ENV TF_CPP_MIN_LOG_LEVEL=3
 ENV PORT=8000
 
 # Run the application
